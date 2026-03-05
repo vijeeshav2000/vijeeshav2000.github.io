@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DON'T TOUCH ME</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Creepster&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    font-family: 'Creepster', cursive;
+    cursor: crosshair;
+  }
+
+  #bg {
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, #1a0505 0%, #0a0a0a 70%);
+  }
+
+  #hint {
+    position: fixed;
+    top: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ff4444aa;
+    font-size: 18px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 100;
+    animation: pulse 2s infinite;
+    transition: opacity 0.5s;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  #score-display {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #ff6666;
+    font-size: 15px;
+    letter-spacing: 2px;
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.7;
+  }
+
+  #character {
+    position: fixed;
+    width: 80px;
+    height: 80px;
+    z-index: 50;
+    pointer-events: none;
+    filter: drop-shadow(0 0 12px #ff000088);
+    transition: left 0.18s cubic-bezier(0.22, 0.61, 0.36, 1),
+                top  0.18s cubic-bezier(0.22, 0.61, 0.36, 1);
+    transform: translate(-50%, -50%);
+  }
+
+  #face { width: 80px; height: 80px; }
+
+  .click-ripple {
+    position: fixed;
+    border-radius: 50%;
+    border: 2px solid #ff4444;
+    pointer-events: none;
+    z-index: 200;
+    animation: ripple-out 0.5s ease-out forwards;
+    transform: translate(-50%, -50%);
+  }
+
+  @keyframes ripple-out {
+    from { width: 10px; height: 10px; opacity: 1; }
+    to   { width: 100px; height: 100px; opacity: 0; }
+  }
+
+  .scream-text {
+    position: fixed;
+    pointer-events: none;
+    z-index: 300;
+    font-family: 'Permanent Marker', cursive;
+    color: #ff2222;
+    text-shadow: 0 0 10px #ff0000, 0 0 20px #ff000088;
+    animation: scream-fly 0.9s ease-out forwards;
+    white-space: nowrap;
+    transform: translate(-50%, -50%);
+  }
+
+  @keyframes scream-fly {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.5); }
+    20%  { opacity: 1; transform: translate(-50%, -130%) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -280%) scale(0.8) rotate(var(--rot)); }
+  }
+
+  #flash {
+    position: fixed;
+    inset: 0;
+    background: #ff0000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 500;
+    transition: opacity 0.05s;
+  }
+</style>
+</head>
+<body>
+
+<div id="bg"></div>
+<div id="flash"></div>
+
+<div id="hint">CLICK ANYWHERE</div>
+<div id="score-display">dodged: <span id="score">0</span></div>
+
+<div id="character">
+  <svg id="face" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="38" r="32" fill="#f5c5a0" stroke="#c8904a" stroke-width="1.5"/>
+    <path d="M16,18 Q18,8 22,12" stroke="#5c3d1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M23,11 Q26,2 30,7"  stroke="#5c3d1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M32,7  Q36,0 40,5"  stroke="#5c3d1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M42,5  Q47,0 50,7"  stroke="#5c3d1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M52,8  Q57,4 58,12" stroke="#5c3d1e" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <g id="eyes-normal">
+      <ellipse cx="28" cy="34" rx="7" ry="8" fill="white"/>
+      <ellipse cx="52" cy="34" rx="7" ry="8" fill="white"/>
+      <circle cx="28" cy="35" r="4" fill="#2a1a0a"/>
+      <circle cx="52" cy="35" r="4" fill="#2a1a0a"/>
+      <circle cx="26" cy="33" r="1.5" fill="white"/>
+      <circle cx="50" cy="33" r="1.5" fill="white"/>
+    </g>
+    <g id="eyes-scream" display="none">
+      <line x1="22" y1="28" x2="33" y2="40" stroke="#cc0000" stroke-width="3" stroke-linecap="round"/>
+      <line x1="33" y1="28" x2="22" y2="40" stroke="#cc0000" stroke-width="3" stroke-linecap="round"/>
+      <line x1="46" y1="28" x2="57" y2="40" stroke="#cc0000" stroke-width="3" stroke-linecap="round"/>
+      <line x1="57" y1="28" x2="46" y2="40" stroke="#cc0000" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <ellipse cx="40" cy="45" rx="3" ry="2" fill="#e0a070"/>
+    <path id="mouth-neutral" d="M30,56 Q40,60 50,56" stroke="#8b4513" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse id="mouth-scream" cx="40" cy="58" rx="10" ry="12" fill="#1a0000" stroke="#8b4513" stroke-width="1.5" display="none"/>
+    <g id="teeth" display="none">
+      <rect x="33" y="55" width="6" height="7" rx="1" fill="white"/>
+      <rect x="41" y="55" width="6" height="7" rx="1" fill="white"/>
+    </g>
+    <g id="sweat" opacity="0">
+      <path d="M68,25 Q70,20 72,25 Q72,30 70,30 Q68,30 68,25Z" fill="#88ccff" opacity="0.8"/>
+      <path d="M10,30 Q8,24 6,30 Q6,36 8,36 Q10,36 10,30Z"   fill="#88ccff" opacity="0.8"/>
+    </g>
+    <ellipse id="blush-l" cx="18" cy="46" rx="7" ry="4" fill="#ff8888" opacity="0"/>
+    <ellipse id="blush-r" cx="62" cy="46" rx="7" ry="4" fill="#ff8888" opacity="0"/>
+  </svg>
+</div>
+
+<script>
+  const character = document.getElementById('character');
+  const bg        = document.getElementById('bg');
+  const flash     = document.getElementById('flash');
+  const scoreEl   = document.getElementById('score');
+  const hint      = document.getElementById('hint');
+
+  const eyesNormal = document.getElementById('eyes-normal');
+  const eyesScream = document.getElementById('eyes-scream');
+  const mouthN     = document.getElementById('mouth-neutral');
+  const mouthS     = document.getElementById('mouth-scream');
+  const teeth      = document.getElementById('teeth');
+  const sweat      = document.getElementById('sweat');
+  const blushL     = document.getElementById('blush-l');
+  const blushR     = document.getElementById('blush-r');
+
+  const PAD = 50; // distance from screen edges
+
+  // Current position (center of character)
+  let cx = window.innerWidth  / 2;
+  let cy = window.innerHeight / 2;
+  let score = 0;
+  let screamTimeout = null;
+  let hintShown = true;
+
+  function clamp(val, min, max) { return Math.max(min, Math.min(max, val)); }
+
+  function setPos(x, y) {
+    cx = clamp(x, PAD, window.innerWidth  - PAD);
+    cy = clamp(y, PAD, window.innerHeight - PAD);
+    character.style.left = cx + 'px';
+    character.style.top  = cy + 'px';
+  }
+
+  setPos(cx, cy);
+
+  function dodge(clickX, clickY) {
+    // Direction vector: from click toward character
+    let dx = cx - clickX;
+    let dy = cy - clickY;
+    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+    // Normalize, then scale by dodge distance
+    const dodgeDist = 140 + Math.random() * 80;
+    dx = (dx / dist) * dodgeDist;
+    dy = (dy / dist) * dodgeDist;
+
+    // Add perpendicular jitter for organic feel
+    const jitter = (Math.random() - 0.5) * 70;
+    // perpendicular unit vector to (dx,dy) is (-dy, dx)/dist
+    const pxv = (-dy / dist);
+    const pyv = ( dx / dist);
+
+    setPos(cx + dx + pxv * jitter, cy + dy + pyv * jitter);
+
+    score++;
+    scoreEl.textContent = score;
+  }
+
+  function setScreamFace(on) {
+    if (on) {
+      eyesNormal.setAttribute('display', 'none');
+      eyesScream.setAttribute('display', '');
+      mouthN.setAttribute('display', 'none');
+      mouthS.setAttribute('display', '');
+      teeth.setAttribute('display', '');
+      sweat.style.opacity = '1';
+      blushL.style.opacity = '0.7';
+      blushR.style.opacity = '0.7';
+    } else {
+      eyesNormal.setAttribute('display', '');
+      eyesScream.setAttribute('display', 'none');
+      mouthN.setAttribute('display', '');
+      mouthS.setAttribute('display', 'none');
+      teeth.setAttribute('display', 'none');
+      sweat.style.opacity = '0';
+      blushL.style.opacity = '0';
+      blushR.style.opacity = '0';
+    }
+  }
+
+  const screams = [
+    'AAAAAAH!', 'NOOOO!', 'WHY?!', 'STAY AWAY!',
+    'HELP!!!',  'AHHHHH!', 'NOT AGAIN!', 'STOPPP!',
+    '😱 AHHH!', 'LEAVE ME!', 'NO NO NO!', 'AIEEE!',
+    'PLEASE!!', 'GET AWAY!', 'OH GOD!!',
+  ];
+
+  function spawnScreamText(x, y) {
+    const el = document.createElement('div');
+    el.className = 'scream-text';
+    el.textContent = screams[Math.floor(Math.random() * screams.length)];
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    el.style.setProperty('--rot', (Math.random() * 30 - 15) + 'deg');
+    el.style.fontSize = (20 + Math.random() * 16) + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1000);
+  }
+
+  function spawnRipple(x, y) {
+    const el = document.createElement('div');
+    el.className = 'click-ripple';
+    el.style.left = x + 'px';
+    el.style.top  = y + 'px';
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 600);
+  }
+
+  function flashScreen() {
+    flash.style.opacity = '0.18';
+    setTimeout(() => flash.style.opacity = '0', 80);
+  }
+
+  function pulseBg() {
+    bg.style.background = 'radial-gradient(ellipse at center, #3a0505 0%, #0a0a0a 70%)';
+    setTimeout(() => {
+      bg.style.background = 'radial-gradient(ellipse at center, #1a0505 0%, #0a0a0a 70%)';
+    }, 150);
+  }
+
+  // --- Scream sound via Web Audio API ---
+  let audioCtx = null;
+
+  function playScream() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    const duration = 0.7 + Math.random() * 0.4;
+    const now = audioCtx.currentTime;
+
+    // Main oscillator — sawtooth for a harsh voice-like tone
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    // Slight vibrato
+    const vibrato = audioCtx.createOscillator();
+    const vibratoGain = audioCtx.createGain();
+    vibrato.frequency.value = 6 + Math.random() * 3;
+    vibratoGain.gain.value = 8 + Math.random() * 6;
+    vibrato.connect(vibratoGain);
+    vibratoGain.connect(osc.frequency);
+    vibrato.start(now);
+    vibrato.stop(now + duration);
+
+    // Pitch: starts mid, rises in panic
+    const basePitch = 220 + Math.random() * 80;
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(basePitch, now);
+    osc.frequency.linearRampToValueAtTime(basePitch * 1.4, now + duration * 0.3);
+    osc.frequency.linearRampToValueAtTime(basePitch * 1.1, now + duration);
+
+    // Envelope: fast attack, sustain, quick fade
+    gainNode.gain.setValueAtTime(0, now);
+    gainNode.gain.linearRampToValueAtTime(0.18, now + 0.04);
+    gainNode.gain.setValueAtTime(0.18, now + duration - 0.1);
+    gainNode.gain.linearRampToValueAtTime(0, now + duration);
+
+    // Bandpass filter to make it more voice-like
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 900;
+    filter.Q.value = 1.5;
+
+    osc.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  document.addEventListener('click', (e) => {
+    if (hintShown) {
+      hint.style.opacity = '0';
+      hintShown = false;
+    }
+
+    const mx = e.clientX;
+    const my = e.clientY;
+
+    playScream();
+    spawnRipple(mx, my);
+    flashScreen();
+    pulseBg();
+
+    // scream text floats up from character's current center
+    spawnScreamText(cx, cy);
+
+    setScreamFace(true);
+    if (screamTimeout) clearTimeout(screamTimeout);
+    screamTimeout = setTimeout(() => setScreamFace(false), 550);
+
+    dodge(mx, my);
+  });
+
+  window.addEventListener('resize', () => setPos(cx, cy));
+</script>
+</body>
+</html>
